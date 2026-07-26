@@ -16,8 +16,8 @@ public class NativeLibManager {
 
     private static final String TAG = "NativeLibManager";
     
-    private static final String BASE_URL_ARM64 = "https://github.com/garden-byte/samp/releases/download/JniLibs/";
-    private static final String BASE_URL_ARMV7 = "https://github.com/garden-byte/samp/releases/download/JniLibsv7/";
+    private static final String BASE_URL_ARM64 = "https://github.com/Fiki-io/Hosted/releases/download/Arm64/";
+    private static final String BASE_URL_ARMV7 = "https://github.com/Fiki-io/Hosted/releases/download/Armeabi-v7/";
 
     private static final String[] LIBS_ARM64 = {
         "libGTASA.so",
