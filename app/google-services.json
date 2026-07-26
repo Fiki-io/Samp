@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "468352755309",
+    "project_id": "samp-mobile-210",
+    "storage_bucket": "samp-mobile-210.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:468352755309:android:45377f4baa9d85eb9dc164",
+        "android_client_info": {
+          "package_name": "com.samp.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAeuN6LW67yxhaeRjKS-65wFg1DT9NqBjs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
