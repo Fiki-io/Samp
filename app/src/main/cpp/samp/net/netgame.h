@@ -43,6 +43,8 @@ typedef unsigned short OBJECTID;
 #define NETMODE_SEND_MULTIPLIER			2
 #define STATS_UPDATE_TICKS 1000 // 1 second
 
+#include "../game/game.h"
+
 #include "localplayer.h"
 #include "remoteplayer.h"
 #include "playerpool.h"
@@ -153,10 +155,6 @@ private:
 	void Packet_BulletSync(Packet* pkt);
 	void Packet_MarkerSync(Packet* pkt);
 	void Packet_TrailerSync(Packet *pkt);
-
-	/* voice */
-	void Packet_VoiceChannelOpenReply(Packet* pkt);
-	void Packet_VoiceData(Packet* pkt);
 
 	void ResetVehiclePool();
 	void ResetActorPool();

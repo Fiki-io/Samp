@@ -21,7 +21,6 @@ import android.widget.ToggleButton;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 import com.samp.mobile.launcher.MainActivity;
 import com.samp.mobile.launcher.SplashActivity;
@@ -34,13 +33,11 @@ import org.ini4j.Wini;
 
 import java.io.File;
 import java.io.IOException;
-@Obfuscate
 public class SettingsFragment extends Fragment {
 
     Wini mWini = null;
     EditText mNickName;
     SwitchCompat mKeyboardSwitch;
-    SwitchCompat mVoiceSwitch;
     SwitchCompat mModifySwitch;
     SwitchCompat mFPSSwitch;
     SwitchCompat mMonetSwitch;
@@ -60,7 +57,6 @@ public class SettingsFragment extends Fragment {
         mKeyboardSwitch = view.findViewById(R.id.keyboard_switch);
         mFPSSwitch = view.findViewById(R.id.fps_switch);
         mMonetSwitch = view.findViewById(R.id.monet_switch);
-        mVoiceSwitch = view.findViewById(R.id.voice_switch);
         mModifySwitch = view.findViewById(R.id.modify_switch);
         mMessagesSeekBar = view.findViewById(R.id.messages_seekbar);
         mMessagesText = view.findViewById(R.id.messages_count);
@@ -119,21 +115,6 @@ public class SettingsFragment extends Fragment {
                 try {
                     if(mWini != null) {
                         mWini.put("gui", "androidkeyboard", b);
-                        mWini.store();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        mVoiceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                new SharedPreferenceCore().setBoolean(requireContext().getApplicationContext(), "VOICE_CHAT", b);
-                try {
-                    if(mWini != null) {
-                        mWini.put("gui", "VoiceChatEnable", b);
                         mWini.store();
                     }
                 } catch (IOException e) {
@@ -265,7 +246,6 @@ public class SettingsFragment extends Fragment {
         super.onResume();
 
         mKeyboardSwitch.setChecked(new SharedPreferenceCore().getBoolean(requireContext().getApplicationContext(), "ANDROID_KEYBOARD"));
-        mVoiceSwitch.setChecked(new SharedPreferenceCore().getBoolean(requireContext().getApplicationContext(), "VOICE_CHAT"));
         mFPSSwitch.setChecked(new SharedPreferenceCore().getBoolean(requireContext().getApplicationContext(), "FPS_DISPLAY"));
         mModifySwitch.setChecked(new SharedPreferenceCore().getBoolean(requireContext().getApplicationContext(), "MODIFIED_DATA"));
         mMonetSwitch.setChecked(new SharedPreferenceCore().getBoolean(requireContext().getApplicationContext(), "MLOADER"));

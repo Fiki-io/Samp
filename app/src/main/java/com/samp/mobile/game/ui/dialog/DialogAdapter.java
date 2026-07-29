@@ -10,12 +10,10 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 import com.samp.mobile.launcher.util.Util;
 
 import java.util.ArrayList;
-@Obfuscate
 public class DialogAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Activity mContext;
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../game/actor.h"
+
 #pragma pack(push, 1)
 typedef struct _NEW_ACTOR
 {

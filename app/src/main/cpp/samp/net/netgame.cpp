@@ -1,13 +1,9 @@
 #include "../main.h"
 #include "../game/game.h"
 #include "netgame.h"
+#include "../util/CUtil.h"
 #include "../gui/gui.h"
 #include "../audiostream.h"
-
-// voice
-#include "../voice_new/MicroIcon.h"
-#include "../voice_new/SpeakerList.h"
-#include "../voice_new/Network.h"
 #include "java/jniutil.h"
 
 //#define AUTH_BS "39FB2DEEDB49ACFB8D4EECE6953D2507988CCCF4410"//main
@@ -307,11 +303,6 @@ void CNetGame::UpdateNetwork()
                 Packet_PassengerSync(pkt);
                 break;
 
-            case Network::kRaknetPacketId: {
-                Network::OnRaknetReceive(pkt);
-                break;
-            }
-
             case 251:
                 Packet_CustomRPC(pkt);
                 break;
@@ -387,11 +378,6 @@ void CNetGame::Packet_CustomRPC(Packet *p) {
 // 0.3.7
 void CNetGame::ShutdownForGameModeRestart()
 {
-	// voice
-	SpeakerList::Hide();
-	MicroIcon::Hide();
-	Network::OnRaknetDisconnect();
-
 	for (PLAYERID playerId = 0; playerId < MAX_PLAYERS; playerId++)
 	{
 		CRemotePlayer* pRemotePlayer = GetPlayerPool()->GetAt(playerId);
@@ -495,9 +481,6 @@ void CNetGame::ProcessConnecting()
 		if (pUI) pUI->chat()->addDebugMessage("Connecting to SA-MP Server...");
 
 		m_pRakClient->Connect(m_szHostOrIp, m_iPort, 0, 0, 2);
-		
-		// voice fix voice not connect when restart
-		Network::OnRaknetConnect(m_szHostOrIp, m_iPort);
 
 		m_dwLastConnectAttempt = GetTickCount();
 		SetGameState(GAMESTATE_CONNECTING);
@@ -535,23 +518,13 @@ void CNetGame::Packet_ConnectAttemptFailed(Packet *pkt)
 	if (pAudioStream) { //add new
 		pAudioStream->Stop(true);
 	}
-	SpeakerList::Hide(); //add new
-	MicroIcon::Hide();
 	SetGameState(GAMESTATE_WAIT_CONNECT);
-
-	//SpeakerList::Hide();
-	//MicroIcon::Hide();
 }
 // 0.3.7
 void CNetGame::Packet_NoFreeIncomingConnections(Packet *pkt)
 {
 	if(pUI) pUI->chat()->addDebugMessage("The server is full. Retrying...");
-	SpeakerList::Hide(); //addnew
-	MicroIcon::Hide();
 	SetGameState(GAMESTATE_WAIT_CONNECT);
-
-	//SpeakerList::Hide();
-	//MicroIcon::Hide();
 }
 // 0.3.7
 void CNetGame::Packet_DisconnectionNotification(Packet *pkt)
@@ -561,9 +534,6 @@ void CNetGame::Packet_DisconnectionNotification(Packet *pkt)
 		pAudioStream->Stop(true);
 	}
 	m_pRakClient->Disconnect(2000);
-
-	SpeakerList::Hide();
-	MicroIcon::Hide();
 }
 // 0.3.7
 void CNetGame::Packet_ConnectionSucceeded(Packet *pkt)
@@ -602,13 +572,7 @@ void CNetGame::Packet_ConnectionSucceeded(Packet *pkt)
 	bsSend.Write(byteClientVerLen);
 	bsSend.Write(SAMP_VERSION, byteClientVerLen);
 
-	Network::OnRaknetRpc(RPC_ClientJoin, bsSend);
-
 	m_pRakClient->RPC(&RPC_ClientJoin, &bsSend, HIGH_PRIORITY, RELIABLE, 0, false, UNASSIGNED_NETWORK_ID, nullptr);
-
-	// voice
-	SpeakerList::Hide();
-	MicroIcon::Hide();
 }
 // 0.3.7
 void CNetGame::Packet_FailedInitializeEncription(Packet *pkt)
@@ -650,9 +614,6 @@ void CNetGame::Packet_ConnectionLost(Packet *pkt)
 	}
 
 	SetGameState(GAMESTATE_WAIT_CONNECT);
-
-	SpeakerList::Hide();
-	MicroIcon::Hide();
 }
 // 0.3.7
 void CNetGame::Packet_PlayerSync(Packet *pkt)
@@ -910,35 +871,6 @@ void CNetGame::Packet_MarkerSync(Packet *pkt)
 		}
 	}
 }
-
-/*
-void CNetGame::Packet_VoiceChannelOpenReply(Packet* pkt)
-{
-	FLog("Packet_VoiceChannelOpenReply");
-
-	if (!pVoice || !GetGameState() == GAMESTATE_CONNECTED) return;
-
-	GetPlayerPool()->GetLocalPlayer()->VoiceChannelAccept();
-}*/
-
-/*
-void CNetGame::Packet_VoiceData(Packet* pkt)
-{
-	if (!pVoice || !GetGameState() == GAMESTATE_CONNECTED) return;
-
-	PLAYERID playerId;
-	int size;
-	unsigned char data[MAX_VOICE_PACKET_SIZE];
-	RakNet::BitStream bsData(pkt->data, pkt->length, false);
-	bsData.IgnoreBits(8);
-	bsData.Read(playerId);
-	bsData.Read(size);
-	bsData.Read((char*)data, size);
-
-	if (GetPlayerPool()->GetSlotState(playerId)) {
-		pVoice->Push(playerId, data, size);
-	}
-}*/
 
 // 0.3.7
 void CNetGame::UpdatePlayerScoresAndPings()

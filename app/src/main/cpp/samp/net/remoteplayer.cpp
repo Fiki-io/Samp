@@ -1091,13 +1091,6 @@ void CRemotePlayer::StateChange(uint8_t byteNewState, uint8_t byteOldState)
 	}
 }
 
-/*
-bool CRemotePlayer::IsVoiceActive()
-{
-	return pVoice->IsPlayerVoiceActive(m_PlayerID);
-} 	
-*/
-
 void CRemotePlayer::ProcessSurfing()
 {
 	if(!m_pPlayerPed || GetState() != PLAYER_STATE_ONFOOT || m_ofSync.wSurfID == INVALID_VEHICLE_ID)

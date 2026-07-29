@@ -5,13 +5,11 @@ import android.os.Build;
 import android.os.Process;
 import android.util.Log;
 
-import com.joom.paranoid.Obfuscate;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-@Obfuscate
 public class NativeLibManager {
 
     private static final String TAG = "NativeLibManager";

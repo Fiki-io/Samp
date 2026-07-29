@@ -23,7 +23,6 @@ import com.downloader.OnProgressListener;
 import com.downloader.PRDownloader;
 import com.downloader.PRDownloaderConfig;
 import com.downloader.Progress;
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.launcher.data.FilesData;
 import com.samp.mobile.launcher.util.NativeLibManager;
 import com.samp.mobile.launcher.util.Util;
@@ -43,7 +42,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-@Obfuscate
 public class UpdateService extends Service {
 
     Messenger mMessenger;
@@ -71,7 +69,7 @@ public class UpdateService extends Service {
         super.onCreate();
         HandlerThread handlerThread = new HandlerThread("ServiceStartArguments", 10);
         handlerThread.start();
-        PRDownloader.initialize(getApplicationContext(), PRDownloaderConfig.newBuilder().setDatabaseEnabled(true).setReadTimeout(30000).setConnectTimeout(30000).build());
+        PRDownloader.initialize(getApplicationContext(), PRDownloaderConfig.newBuilder().setDatabaseEnabled(false).setReadTimeout(30000).setConnectTimeout(30000).build());
         mInHandler = new IncomingHandler(handlerThread.getLooper());
         mMessenger = new Messenger(mInHandler);
     }
@@ -147,6 +145,7 @@ public class UpdateService extends Service {
                     mUpdateFiles = new ArrayList<>();
                     mUpdateFilesName = new ArrayList<>();
                     mUpdateFilesSize = new ArrayList<>();
+                    mUpdateGameDataSize = 0;
 
                     JSONObject jSONObject = new JSONObject(response).getJSONObject("client_config");
                     mUpdateVersion = jSONObject.getInt("version_code");
@@ -252,6 +251,7 @@ public class UpdateService extends Service {
         JSONObject jsonObject = new JSONObject(Util.responseFiles);
         JSONArray jsonArray = jsonObject.getJSONArray("files");
         Log.d("x1y2z", "Length: " + jsonArray.length());
+        mUpdateGameDataSize = 0;
         for(int i = 0; i<jsonArray.length(); i++) {
             FilesData fileData = new FilesData(jsonArray.getJSONObject(i).getString("name"), jsonArray.getJSONObject(i).getLong("size"), jsonArray.getJSONObject(i).getString("path"), jsonArray.getJSONObject(i).getString("url"));
             if (!fileData.getName().equals("samp_log.txt") && !fileData.getName().equals("svlog.txt") && !fileData.getName().equals("gtasatelem.set")) {
@@ -320,10 +320,44 @@ public class UpdateService extends Service {
         if (!libDir.exists()) {
             libDir.mkdirs();
         }
-        for (final NativeLibManager.DownloadItem item : missingLibs) {
+
+        setUpdateStatus(UpdateActivity.UpdateStatus.DownloadGameData);
+
+        for (int i = 0; i < missingLibs.size(); i++) {
+            final NativeLibManager.DownloadItem item = missingLibs.get(i);
+            final int currentIndex = i;
+            final int totalLibs = missingLibs.size();
             mDownloadingStatus = true;
+
+            final Ref.LongRef longRef = new Ref.LongRef();
+            longRef.element = System.currentTimeMillis();
+
             PRDownloader.download(item.downloadUrl, libDir.getAbsolutePath(), item.fileName)
                     .build()
+                    .setOnProgressListener(new OnProgressListener() {
+                        @Override
+                        public void onProgress(Progress progress) {
+                            mDownloadingStatus = true;
+                            if (System.currentTimeMillis() - longRef.element > 100) {
+                                longRef.element = System.currentTimeMillis();
+                                Message obtain = Message.obtain(mInHandler, 4);
+                                obtain.getData().putString("status", UpdateActivity.UpdateStatus.DownloadGameData.name());
+                                obtain.getData().putBoolean("withProgress", true);
+                                obtain.getData().putLong("current", progress.currentBytes);
+                                obtain.getData().putLong("total", progress.totalBytes > 0 ? progress.totalBytes : 1);
+                                obtain.getData().putString("filename", item.fileName);
+                                obtain.getData().putLong("totalfiles", totalLibs);
+                                obtain.getData().putLong("currentfile", currentIndex + 1);
+                                if (mActivityMessenger != null) {
+                                    try {
+                                        mActivityMessenger.send(obtain);
+                                    } catch (RemoteException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }
+                    })
                     .start(new OnDownloadListener() {
                         @Override
                         public void onDownloadComplete() {
@@ -398,6 +432,10 @@ public class UpdateService extends Service {
         mUpdateFiles.clear();
         mUpdateFilesName.clear();
         mUpdateFilesSize.clear();
+        mUpdateGameDataSize = 0;
+        for (int i = 0; i < arrayList2.size(); i++) {
+            mUpdateGameDataSize += ((Long) arrayList2.get(i)).longValue();
+        }
         Ref.IntRef intRef = new Ref.IntRef();
         intRef.element = 0;
         Ref.LongRef longRef1 = new Ref.LongRef();
@@ -409,7 +447,7 @@ public class UpdateService extends Service {
 
             //Log.d("x1y2z", "Update file path: " + string.replace((CharSequence) arrayList1.get(intRef.element), "") + ", Name:" + arrayList1.get(intRef.element));
 
-            File file = new File(getExternalFilesDir(null), string);
+            File file = new File(string);
             file.getParentFile().mkdirs();
             if (file.exists()) {
                 file.delete();
@@ -431,7 +469,7 @@ public class UpdateService extends Service {
                         obtain.getData().putString("status", UpdateActivity.UpdateStatus.DownloadGameData.name());
                         obtain.getData().putBoolean("withProgress", true);
                         obtain.getData().putLong("current", longRef1.element+progress.currentBytes);
-                        obtain.getData().putLong("total", mUpdateGameDataSize/2);
+                        obtain.getData().putLong("total", mUpdateGameDataSize);
                         obtain.getData().putString("filename", (String)arrayList1.get(intRef.element));
                         obtain.getData().putLong("totalfiles", arrayList.size());
                         obtain.getData().putLong("currentfile", intRef.element);

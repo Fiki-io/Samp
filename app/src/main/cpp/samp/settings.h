@@ -36,11 +36,6 @@ struct stSettings
 	float fPassengerTextureSize;
 	float fPassengerTextureX;
 	float fPassengerTextureY;
-	bool bVoiceChatEnable;
-	int iVoiceChatKey;
-	float fVoiceChatSize;
-	float fVoiceChatPosX;
-	float fVoiceChatPosY;
 
 	bool iAndroidKeyboard;
 	bool iCutout;

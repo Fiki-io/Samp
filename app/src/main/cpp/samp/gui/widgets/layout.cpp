@@ -15,7 +15,7 @@ void Layout::performLayout()
 	int itemCount = children().size();
 	ImVec2 itemSize = size() - ImVec2(m_paddingLeft + m_paddingRight, m_paddingTop + m_paddingBottom);
 
-	// рассчитываем размеры элементов, для которых не указан размер
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	for (auto c : children())
 	{
 		if (m_orientation == Orientation::HORIZONTAL)
@@ -36,7 +36,7 @@ void Layout::performLayout()
 		}
 	}
 
-	// рассчитываем размер элементов с учетом spacing
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ spacing
 	if (m_orientation == Orientation::HORIZONTAL)
 	{
 		itemSize.x -= m_spacing * (children().size() - 1);
@@ -48,7 +48,7 @@ void Layout::performLayout()
 		itemSize.y /= itemCount;
 	}
 
-	// формируем виджет
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	ImVec2 curPos = ImVec2(m_paddingLeft, m_paddingTop);
 
 	for (auto c : children())

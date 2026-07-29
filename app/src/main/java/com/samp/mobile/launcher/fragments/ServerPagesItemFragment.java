@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 import com.samp.mobile.launcher.MainActivity;
 import com.samp.mobile.launcher.SplashActivity;
@@ -26,7 +25,6 @@ import com.samp.mobile.launcher.adapters.ServerAdapter;
 import com.samp.mobile.launcher.util.ButtonAnimator;
 
 import java.util.Objects;
-@Obfuscate
 public class ServerPagesItemFragment extends Fragment {
 
     private int pagePosition;

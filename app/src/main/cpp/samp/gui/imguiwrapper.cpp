@@ -5,12 +5,6 @@
 #include "../game/game.h"
 #include "../net/netgame.h"
 
-// voice
-#include "../voice_new/MicroIcon.h"
-#include "../voice_new/SpeakerList.h"
-#include "../voice_new/include/util/Render.h"
-
-
 extern UI* pUI;
 extern CNetGame* pNetGame;
 

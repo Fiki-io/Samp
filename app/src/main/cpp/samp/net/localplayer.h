@@ -34,9 +34,6 @@
 #define INVALID_PLAYER_ID	0xFFFF
 #define NO_TEAM 0xFF
 
-#define VOICE_CHANNEL_STATE_CLOSED		0
-#define VOICE_CHANNEL_STATE_WAIT_ACCEPT	1
-#define VOICE_CHANNEL_STATE_ACCEPTED	2
 #pragma pack(push, 1)
 typedef struct _PLAYER_SPAWN_INFO
 {
@@ -239,15 +236,6 @@ public:
 	void SendGiveDamageActorEvent(PLAYERID ActorID, float fDamageFactor, int weaponType, int pedPieceType);
 
 	CPlayerPed* GetPlayerPed() { return m_pPlayerPed; }
-
-	/* voice */
-	void UpdateVoice();
-	void VoiceChannelAccept();
-	void VoiceChannelClose();
-
-	void SendVCData();
-	void SendVCOpenRequest();
-	void SendVCClose();
 
 	void SendTrailerData(VEHICLEID vehicleId);
 

@@ -81,7 +81,7 @@ void Dialog::setButton2Caption(const std::string& caption)
 
 void Dialog::performLayout()
 {
-	/* формируем виджет контента */
+	/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	m_content->setMinSize(ImVec2(
 		this->minSize().x - (UISettings::padding() + UISettings::padding()),
 		this->minSize().y - (UISettings::dialogTitleHeight() + UISettings::dialogButtonPanelSize().y)
@@ -92,7 +92,7 @@ void Dialog::performLayout()
 	));
 	m_content->performLayout();
 
-	/* рассчитываем размеры диалога */
+	/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	ImVec2 dialog_size = ImVec2(
 		m_content->width() + (UISettings::padding() + UISettings::padding()),
 		UISettings::dialogTitleHeight() + m_content->height() + UISettings::dialogButtonPanelSize().y + UISettings::padding() + UISettings::padding()
@@ -100,15 +100,15 @@ void Dialog::performLayout()
 
 	this->setSize(dialog_size);
 
-	/* формируем заголовок */
+	/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	m_title->setSize(ImVec2(dialog_size.x, UISettings::dialogTitleHeight()));
 	m_title->performLayout();
 
-	/* формируем панель кнопок */
+	/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ */
 	m_buttonPanel->setFixedSize(UISettings::dialogButtonPanelSize());
 	m_buttonPanel->performLayout();
 
-	/* размещаем все элементы */
+	/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	m_title->setPosition(ImVec2(0.0f, 0.0f));
 	m_content->setPosition(ImVec2(
 		UISettings::padding(),
@@ -117,7 +117,7 @@ void Dialog::performLayout()
 		(dialog_size.x - m_buttonPanel->width()) / 2,
 		(dialog_size.y - m_buttonPanel->height())));
 
-	/* позиционируем диалог по центру */
+	/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ */
 	this->setPosition(ImVec2(
 		(parent()->width() - width()) / 2,
 		(parent()->height() - height()) / 2));

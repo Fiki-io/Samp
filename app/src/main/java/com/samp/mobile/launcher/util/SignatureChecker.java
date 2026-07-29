@@ -7,12 +7,10 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.Signature;
 import android.util.Log;
 
-import com.joom.paranoid.Obfuscate;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-@Obfuscate
 public class SignatureChecker {
     public static boolean isSignatureValid(Context ctx, String packageName) {
         return true;

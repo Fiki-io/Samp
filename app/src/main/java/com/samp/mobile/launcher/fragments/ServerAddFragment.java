@@ -15,7 +15,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 import com.samp.mobile.launcher.MainActivity;
 import com.samp.mobile.launcher.adapters.FavouriteServerAdapter;
@@ -31,7 +30,6 @@ import java.io.FileWriter;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-@Obfuscate
 public class ServerAddFragment extends Dialog {
 
     FavouriteServerAdapter mFavouriteServerAdapter;

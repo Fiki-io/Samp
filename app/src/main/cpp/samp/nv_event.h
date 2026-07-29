@@ -4,7 +4,7 @@
 // Email:           tegradev@nvidia.com
 // Forum:           http://developer.nvidia.com/tegra/forums/tegra-forums/android-development
 //
-// Copyright 2009-2010 NVIDIA® Corporation 
+// Copyright 2009-2010 NVIDIAï¿½ Corporation 
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

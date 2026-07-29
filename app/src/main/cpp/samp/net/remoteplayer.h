@@ -99,8 +99,6 @@ public:
 	void ShowGlobalMarker(short sPosX, short sPosY, short sPosZ);
 	void HideGlobalMarker();
 
-	bool IsVoiceActive();
-
 	void ProcessSurfing();
 
 	void ProcessSpecialActions(uint8_t byteSpecialAction);

@@ -524,12 +524,7 @@ uint32_t CPad__GetDisplayVitalStats_hook(uint32_t thiz)
 uint32_t(*CPad__GetLookBehindForPed)(uint32_t thiz);
 uint32_t CPad__GetLookBehindForPed_hook(uint32_t thiz)
 {
-	uint32_t result = CPad__GetLookBehindForPed(thiz);
-
-	VoiceButton* vbutton = pUI->voicebutton();
-	if (vbutton->countdown > 50) return 0;
-
-	//return 0;
+	return CPad__GetLookBehindForPed(thiz);
 }
 
 int (*CPad__GetNitroFired)(uintptr_t thiz);

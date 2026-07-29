@@ -37,7 +37,6 @@ extern uintptr_t g_libGTASA;
 extern JavaVM* javaVM;
 
 uint32_t GetTickCount();
-void LogVoice(const char* fmt, ...);
 
 void FLog(const char* fmt, ...);
 void MyLog(const char* fmt, ...);

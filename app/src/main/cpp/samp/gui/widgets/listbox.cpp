@@ -34,14 +34,14 @@ ListBox::Panel::Panel()
 
 void ListBox::Panel::performLayout()
 {
-	/* формируем все элементы */
+	/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	for (auto c : children())
 	{
 		c->setFixedSize(m_itemSize);
 		c->performLayout();
 	}
 
-	/* размещаем элементы */
+	/* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
 	ImVec2 item_pos = ImVec2(0.0f, 0.0f);
 
 	for (auto c : children())

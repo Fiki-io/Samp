@@ -26,7 +26,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.FileProvider;
 
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 import com.samp.mobile.launcher.config.Config;
 import com.samp.mobile.launcher.util.SignatureChecker;
@@ -35,7 +34,6 @@ import java.io.File;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
-@Obfuscate
 public class UpdateActivity extends AppCompatActivity{
     public Messenger mMessenger = new Messenger(new IncomingHandler());
     public Messenger mService;
@@ -87,22 +85,29 @@ public class UpdateActivity extends AppCompatActivity{
                     long j = msg.getData().getLong("total");
                     long j2 = msg.getData().getLong("current");
                     ((TextView) findViewById(R.id.fileName)).setText(msg.getData().getString("filename"));
-                    ((TextView) findViewById(R.id.fileCount)).setText(j2/1048576 + "MB/" + j/1048576+"MB");
+                    if (j >= 1048576) {
+                        ((TextView) findViewById(R.id.fileCount)).setText(String.format("%.1f MB / %.1f MB", j2 / 1048576.0, j / 1048576.0));
+                    } else {
+                        ((TextView) findViewById(R.id.fileCount)).setText((j2 / 1024) + " KB / " + (j / 1024) + " KB");
+                    }
                     ProgressBar progressBar = findViewById(R.id.download_progress);
                     progressBar.setIndeterminate(false);
-                    Log.d("UpdateActivity", (int) (j/1048576) + "/" + (int) (j2/1048576));
-                    progressBar.setMax((int) (j/1048576));
-                    progressBar.setProgress((int) (j2/1048576));
+                    int percent = (int) (j > 0 ? (j2 * 100 / j) : 0);
+                    if (percent > 100) percent = 100;
+                    progressBar.setMax(100);
+                    progressBar.setProgress(percent);
 
-                    ((TextView) findViewById(R.id.fileProgressPercent)).setText(j2*100/(j+1) + "%");
+                    ((TextView) findViewById(R.id.fileProgressPercent)).setText(percent + "%");
                 } else if (valueOf == UpdateActivity.UpdateStatus.CheckUpdate) {
                     Log.d("x1y2z", "statusname = " + valueOf);
                     long j = msg.getData().getLong("total");
                     long j2 = msg.getData().getLong("current");
                     ((TextView) findViewById(R.id.fileName)).setText(msg.getData().getString("filename"));
                     ProgressBar progressBar = (ProgressBar) UpdateActivity.this.findViewById(R.id.download_progress);
-                    progressBar.setMax((int) (j)/1048576);
-                    progressBar.setProgress((int) (j2)/1048576);
+                    int percent = (int) (j > 0 ? (j2 * 100 / j) : 0);
+                    if (percent > 100) percent = 100;
+                    progressBar.setMax(100);
+                    progressBar.setProgress(percent);
                 } else if (valueOf == UpdateStatus.DownloadGame) {
                     ((TextView)findViewById(R.id.installation_text)).setText("Updating game...");
                     Log.d("x1y2z", "statusname = " + valueOf);
@@ -112,8 +117,10 @@ public class UpdateActivity extends AppCompatActivity{
                     ((TextView) findViewById(R.id.fileCount)).setText(msg.getData().getLong("currentfile") + "/" + msg.getData().getLong("totalfiles"));
                     ProgressBar progressBar = (ProgressBar) UpdateActivity.this.findViewById(R.id.download_progress);
                     progressBar.setIndeterminate(false);
-                    progressBar.setMax((int) (j)/1048576);
-                    progressBar.setProgress((int) (j2)/1048576);
+                    int percent = (int) (j > 0 ? (j2 * 100 / j) : 0);
+                    if (percent > 100) percent = 100;
+                    progressBar.setMax(100);
+                    progressBar.setProgress(percent);
                 }else if (!mIsStartingUpdate) {
                     Message obtain2 = Message.obtain((Handler) null, 1);
                     obtain2.replyTo = UpdateActivity.this.mMessenger;

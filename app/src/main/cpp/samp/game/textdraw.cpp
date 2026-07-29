@@ -1,6 +1,7 @@
 #include "../main.h"
 #include "game.h"
 #include "util.h"
+#include "util/CUtil.h"
 #include "RW/RenderWare.h"
 #include "../gui/gui.h"
 

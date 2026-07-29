@@ -6,7 +6,7 @@
 #include <string>
 
 /*
-	Обертка над ImGui
+	пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ ImGui
 */
 
 class ImGuiRenderer

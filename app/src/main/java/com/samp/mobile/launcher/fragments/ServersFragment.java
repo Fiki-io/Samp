@@ -12,11 +12,9 @@ import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.tabs.TabLayout;
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 import com.samp.mobile.launcher.MainActivity;
 import com.samp.mobile.launcher.util.ViewPagerWithoutSwipe;
-@Obfuscate
 public class ServersFragment extends Fragment {
 
     public final class PagerAdapter extends FragmentPagerAdapter {

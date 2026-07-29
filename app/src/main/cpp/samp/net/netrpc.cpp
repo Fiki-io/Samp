@@ -154,24 +154,6 @@ void InitGame(RPCParameters* rpcParams)
 	pNetGame->SetGameState(GAMESTATE_CONNECTED);
 
 	pPlayerPool->GetLocalPlayer()->HandleClassSelection();
-
-	
-	if (pUI) {
-		pUI->voicebutton()->setVisible(true);
-	}
-
-	/*if (pVoice && pVoice->recorder()->active())
-	{
-		if (pUI) {
-			pUI->voicebutton()->setVisible(true);
-		}
-	}
-	else
-	{
-		//pUI->dialog()->show(-1, DialogStyle::MSGBOX, u8"Voice", u8"Voice chat not initalized. \nPlease allow the app to access the microphone!", u8"OK", "");
-		// or
-		pUI->chat()->addInfoMessage(u8"{ff0000}Voice chat not inited. Please allow the app to access the microphone!");
-	}*/
 }
 // 0.3.7
 #include "java/jniutil.h"

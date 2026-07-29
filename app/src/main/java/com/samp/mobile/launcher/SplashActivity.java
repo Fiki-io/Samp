@@ -30,7 +30,6 @@ import androidx.core.content.ContextCompat;
 
 import com.downloader.Progress;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 import com.samp.mobile.launcher.config.Config;
 import com.samp.mobile.launcher.util.SharedPreferenceCore;
@@ -41,10 +40,9 @@ import java.io.File;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
-@Obfuscate
 public class SplashActivity extends AppCompatActivity {
 
-    private final String[] permissions = {"android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.RECORD_AUDIO"};
+    private final String[] permissions = {"android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"};
 
     public int mGpuType;
 
@@ -244,16 +242,20 @@ public class SplashActivity extends AppCompatActivity {
 
     public boolean isPermissionsGranted()
     {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            return true;
+        }
+
         int size = permissions.length;
 
         for (int i = 0; i < size; i++) {
             if (ContextCompat.checkSelfPermission(this, permissions[i])
-                    == PackageManager.PERMISSION_GRANTED) {
-                return true;
+                    != PackageManager.PERMISSION_GRANTED) {
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     @Override
@@ -262,12 +264,10 @@ public class SplashActivity extends AppCompatActivity {
         if (requestCode != 1) {
             return;
         }
-        if (grantResults.length <= 0 || grantResults[0] != 0) {
-            Toast.makeText(this, "Permissions not granted!", Toast.LENGTH_LONG).show();
-        } else {
-            mIsBind = bindService(new Intent(this, UpdateService.class), mConnection, Context.BIND_AUTO_CREATE);
+        if (grantResults.length <= 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Permissions not granted!", Toast.LENGTH_SHORT).show();
         }
-
+        mIsBind = bindService(new Intent(this, UpdateService.class), mConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -286,7 +286,6 @@ public class SplashActivity extends AppCompatActivity {
         if (prefs.getBoolean("firstrun", true)) {
             new SharedPreferenceCore().setInt(getApplicationContext(), "FPS_LIMIT", 60);
             new SharedPreferenceCore().setInt(getApplicationContext(), "MESSAGE_COUNT", 6);
-            new SharedPreferenceCore().setBoolean(getApplicationContext(), "VOICE_CHAT", true);
             new SharedPreferenceCore().setBoolean(getApplicationContext(), "MODIFIED_DATA", false);
             new SharedPreferenceCore().setBoolean(getApplicationContext(), "AML", false);
             new SharedPreferenceCore().setBoolean(getApplicationContext(), "CLEO", false);

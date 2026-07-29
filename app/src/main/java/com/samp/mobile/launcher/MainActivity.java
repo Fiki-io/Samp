@@ -32,7 +32,6 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.tabs.TabLayout;
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 import com.samp.mobile.launcher.adapters.FavouriteServerAdapter;
 import com.samp.mobile.launcher.adapters.ServerAdapter;
@@ -63,7 +62,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-@Obfuscate
 public class MainActivity extends AppCompatActivity {
 
     public String[] tabTitles = { "Servers", "Info", "Settings" };

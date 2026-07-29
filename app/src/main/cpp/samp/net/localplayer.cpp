@@ -1,12 +1,9 @@
-﻿#include "../main.h"
+#include "../main.h"
 #include "../game/game.h"
 #include "netgame.h"
 #include "localplayer.h"
 #include "../gui/gui.h"
 
-// voice
-#include "../voice_new/MicroIcon.h"
-#include "../voice_new/SpeakerList.h"
 #include "game/Tasks/TaskTypes/TaskComplexEnterCarAsDriver.h"
 
 extern UI* pUI;
@@ -456,10 +453,6 @@ void CLocalPlayer::ResetAllSyncAttributes()
 	m_dwLastWeaponsUpdateTick = GetTickCount();
 	m_byteCurrentWeapon = 0;
 
-	/* voice */
-	m_iVCState = VOICE_CHANNEL_STATE_CLOSED;
-	m_dwVCOpenRequestTick = GetTickCount();
-
 	m_CurrentVehicle = INVALID_VEHICLE_ID;
 	m_LastVehicle = INVALID_VEHICLE_ID;
 	m_nLastVehicle = INVALID_VEHICLE_ID;
@@ -589,10 +582,6 @@ bool CLocalPlayer::Spawn()
 	if (!m_bHasSpawnInfo) {
 		return false;
 	}
-
-	// voice
-	SpeakerList::Show();
-	MicroIcon::Show();
 
 	if (m_bSpawnDialogShowed == true)
 	{
@@ -1803,90 +1792,6 @@ void CLocalPlayer::GiveActorDamage(PLAYERID wPlayerID, float damage_amount, uint
 	int RPC_GiveActorDamage = 177;
 	pNetGame->GetRakClient()->RPC(&RPC_GiveActorDamage, &bitStream, HIGH_PRIORITY, RELIABLE_ORDERED, 0, false, UNASSIGNED_NETWORK_ID, nullptr);
 }
-
-/*
-void CLocalPlayer::UpdateVoice()
-{
-	if (!pVoice || !pUI) return;
-	VoiceButton* vbutton = pUI->voicebutton();
-
-	switch (m_iVCState)
-	{
-	case VOICE_CHANNEL_STATE_CLOSED:
-		if (vbutton->recording()) {
-			// îòïðàâëÿåì çàïðîñ íà îòêðûòèå êàíàëà
-			SendVCOpenRequest();
-		}
-		break;
-
-	case VOICE_CHANNEL_STATE_WAIT_ACCEPT:
-		// æäåì îòâåòà áîëüøå 2 ñåêóíä? 
-		if (!vbutton->recording() || GetTickCount() - m_dwVCOpenRequestTick > 2000) {
-			SendVCClose();
-		}
-		break;
-
-	case VOICE_CHANNEL_STATE_ACCEPTED:
-		if (vbutton->recording()) {
-			SendVCData();
-		}
-		else {
-			SendVCClose();
-		}
-		break;
-	}
-}
-*/
-
-/*
-void CLocalPlayer::VoiceChannelAccept()
-{
-	m_iVCState = VOICE_CHANNEL_STATE_ACCEPTED;
-}*/
-
-/*
-void CLocalPlayer::VoiceChannelClose()
-{
-	pUI->voicebutton()->setRecording(false);
-	m_iVCState = VOICE_CHANNEL_STATE_CLOSED;
-}
-*/
-
-/*
-void CLocalPlayer::SendVCOpenRequest()
-{
-	RakNet::BitStream bsData;
-	bsData.Write((char)ID_VOICE_CHANNEL_OPEN_REQUEST);
-	pNetGame->GetRakClient()->Send(&bsData, HIGH_PRIORITY, RELIABLE_ORDERED, 0);
-
-	m_dwVCOpenRequestTick = GetTickCount();
-	m_iVCState = VOICE_CHANNEL_STATE_WAIT_ACCEPT;
-}*/
-
-/*
-void CLocalPlayer::SendVCData()
-{
-	unsigned char voiceData[MAX_VOICE_PACKET_SIZE];
-	int size = pVoice->Frame(voiceData, sizeof(voiceData));
-	if (size == -1) return;
-
-	RakNet::BitStream bsData;
-	bsData.Write((char)ID_VOICE_DATA);
-	bsData.Write(size);
-	bsData.Write((char*)voiceData, size);
-	pNetGame->GetRakClient()->Send(&bsData, MEDIUM_PRIORITY, UNRELIABLE_SEQUENCED, 0);
-}*/
-
-/*
-void CLocalPlayer::SendVCClose()
-{
-	RakNet::BitStream bsData;
-	bsData.Write((char)ID_VOICE_CHANNEL_CLOSE);
-	pNetGame->GetRakClient()->Send(&bsData, HIGH_PRIORITY, RELIABLE_ORDERED, 0);
-
-	VoiceChannelClose();
-}
-*/
 
 uint32_t CLocalPlayer::GetCurrentAnimationIndexFlag()
 {

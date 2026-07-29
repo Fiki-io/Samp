@@ -4,7 +4,9 @@
 
 #include "WidgetGta.h"
 #include "main.h"
+#include "util/CUtil.h"
 #include "game/game.h"
+#include "game/util.h"
 #include "net/netgame.h"
 #include "vendor/armhook/patch.h"
 #include "WidgetRegionLook.h"

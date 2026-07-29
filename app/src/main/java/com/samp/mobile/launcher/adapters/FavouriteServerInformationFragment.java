@@ -17,7 +17,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 import com.samp.mobile.game.GTASA;
 import com.samp.mobile.game.SAMP;
@@ -34,7 +33,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-@Obfuscate
 public class FavouriteServerInformationFragment extends Dialog {
 
     FavouriteServerAdapter mFavouriteServerAdapter;

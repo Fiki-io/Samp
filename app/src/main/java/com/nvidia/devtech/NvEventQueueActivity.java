@@ -52,7 +52,6 @@ import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.R;
 
 import java.io.FileInputStream;
@@ -80,7 +79,6 @@ are also made available to the native code for ease of application porting.
 Please see the external SDK documentation for an introduction to the use of
 this class and its paired native library.
 */
-@Obfuscate
 public abstract class NvEventQueueActivity extends AppCompatActivity implements SensorEventListener, View.OnTouchListener {
 
     protected Handler handler = null;

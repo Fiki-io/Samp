@@ -22,8 +22,7 @@
 #include "samp_widgets/chat.h"
 #include "samp_widgets/spawn.h"
 #include "samp_widgets/buttonpanel.h"
-#include "samp_widgets/playerTabList.h"
-#include "samp_widgets/voicebutton.h"
+#include "samp_widgets/playertablist.h"
 
 #include "samp_widgets/dialogs/dialog.h"
 
@@ -52,7 +51,6 @@ public:
 	Dialog* dialog() const { return m_dialog; }
 	ButtonPanel* buttonpanel() const { return m_buttonPanel; }
 	PlayerTabList* playertablist() const { return m_playerTabList; }
-	VoiceButton* voicebutton() const { return m_voiceButton; }
 
 	static const ImColor fixcolor(uint32_t color) {
 		return ImColor(
@@ -93,7 +91,6 @@ private:
 	Dialog* m_dialog;
 	ButtonPanel* m_buttonPanel;
 	PlayerTabList* m_playerTabList;
-	VoiceButton* m_voiceButton;
 	Label* label;
     Label* label2;
     Label* label3;

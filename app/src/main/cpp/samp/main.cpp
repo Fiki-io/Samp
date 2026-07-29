@@ -1,4 +1,4 @@
-﻿#include <jni.h>
+#include <jni.h>
 #include <pthread.h>
 #include <syscall.h>
 
@@ -11,9 +11,6 @@
 #include "java/jniutil.h"
 #include <dlfcn.h>
 #include "StackTrace.h"
-
-// voice
-#include "voice_new/Plugin.h"
 
 #include "vendor/armhook/patch.h"
 #include "vendor/str_obfuscator/str_obfuscator.hpp"
@@ -234,7 +231,7 @@ void DoInitStuff()
 
 		Samp::loadStatus = true;*/
 
-		LogVoice("[dbg:samp:load] : module loaded");
+		// LogVoice("[dbg:samp:load] : module loaded");
 
 		if (bDebug)
 		{
@@ -322,10 +319,6 @@ void MainLoop()
 
 void InitGui()
 {
-	// new voice
-	Plugin::OnPluginLoad();
-	Plugin::OnSampLoad();
-
 	std::string font_path = string_format("%sfonts/%s", g_pszStorage, FONT_NAME);
 	pUI = new UI(ImVec2(RsGlobal->maximumWidth, RsGlobal->maximumHeight), font_path.c_str());
 	pUI->initialize();
@@ -532,33 +525,5 @@ void MyLog2(const char* fmt, ...)
 	if (flLog == nullptr) return;
 	fprintf(flLog, "%s\n", buffer);
 	fflush(flLog);
-	return;
-}
-
-void LogVoice(const char* fmt, ...)
-{
-	char buffer[0xFF];
-	static FILE* flLog = nullptr;
-	const char* pszStorage = g_pszStorage;
-
-	if (flLog == nullptr && pszStorage != nullptr)
-	{
-		sprintf(buffer, "%sSAMP/%s", pszStorage, SV::kLogFileName);
-		flLog = fopen(buffer, "w");
-	}
-
-	memset(buffer, 0, sizeof(buffer));
-
-	va_list arg;
-	va_start(arg, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, arg);
-	va_end(arg);
-
-	__android_log_write(ANDROID_LOG_INFO, "AXL", buffer);
-
-	if (flLog == nullptr) return;
-	fprintf(flLog, "%s\n", buffer);
-	fflush(flLog);
-
 	return;
 }

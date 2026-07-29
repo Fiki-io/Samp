@@ -8,13 +8,11 @@ import android.view.KeyEvent;
 import android.widget.Toast;
 
 import com.bytedance.shadowhook.ShadowHook;
-import com.joom.paranoid.Obfuscate;
 import com.samp.mobile.launcher.util.NativeLibManager;
 import com.samp.mobile.launcher.util.SharedPreferenceCore;
 import com.samp.mobile.launcher.util.SignatureChecker;
 import com.wardrumstudios.utils.WarMedia;
 
-@Obfuscate
 public class GTASA extends WarMedia {
     // public static GTASA gtasaSelf = null;
     static String vmVersion;
