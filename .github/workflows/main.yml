@@ -1,4 +1,4 @@
-name: Build PRoot Static ARM64
+name: Build PRoot ARM64
 
 on:
   push:
@@ -6,49 +6,44 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-proot:
-    name: Build PRoot dari Source (ARM64)
+  fetch-proot:
+    name: Fetch PRoot Binary ARM64
     runs-on: ubuntu-22.04
     steps:
-      - name: Install dependencies
+      - name: Install tools
         run: |
-          sudo dpkg --add-architecture arm64
-          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe" \
-            | sudo tee -a /etc/apt/sources.list
           sudo apt-get update -qq
-          sudo apt-get install -y \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu \
-            make \
-            git \
-            pkg-config \
-            libtalloc-dev:arm64 \
-            libtalloc-dev
+          sudo apt-get install -y -qq wget binutils file zstd
 
-      - name: Clone PRoot
-        run: git clone --depth=1 https://github.com/proot-me/proot.git
-
-      - name: Build PRoot ARM64
+      - name: Download PRoot ARM64
         run: |
-          cd proot/src
+          wget -q "https://packages.termux.dev/apt/termux-main/dists/stable/main/binary-aarch64/Packages" -O Packages
 
-          # Build loader.elf dengan host gcc (bukan cross compiler)
-          # karena loader.elf adalah helper kecil yang di-embed
-          make CC=aarch64-linux-gnu-gcc \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            CFLAGS="-O2 -Wno-deprecated -Wno-unused-result" \
-            LDFLAGS="-static" \
-            HAS_LOADER_32BIT=0 \
-            LOADER_BUILD_ENV="aarch64-linux-gnu-" \
-            proot
+          PROOT_PKG=$(grep -A5 "^Package: proot$" Packages | grep "Filename:" | head -1 | awk '{print $2}')
+          echo "Package path: $PROOT_PKG"
 
-          aarch64-linux-gnu-strip proot
-          file proot
-          ls -lh proot
+          wget -q "https://packages.termux.dev/$PROOT_PKG" -O proot.deb
+          ls -lh proot.deb
+
+          ar x proot.deb
+          ls -la
+
+          if [ -f data.tar.xz ]; then
+            tar -xJf data.tar.xz
+          elif [ -f data.tar.gz ]; then
+            tar -xzf data.tar.gz
+          elif [ -f data.tar.zst ]; then
+            tar -I zstd -xf data.tar.zst
+          fi
+
+          find . -path "*/bin/proot" -type f | head -1 | xargs -I{} cp {} ./proot
+
+          echo "=== Verifikasi ==="
+          file ./proot
+          ls -lh ./proot
 
       - name: Upload PRoot
         uses: actions/upload-artifact@v4
         with:
           name: proot-arm64
-          path: proot/src/proot
+          path: proot
