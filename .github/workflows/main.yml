@@ -1,4 +1,4 @@
-name: Build PRoot ARM64
+name: Build Ultra Minimal RootFS
 
 on:
   push:
@@ -6,44 +6,124 @@ on:
   workflow_dispatch:
 
 jobs:
-  fetch-proot:
-    name: Fetch PRoot Binary ARM64
+  build-rootfs:
+    name: Build Ultra Minimal Debian RootFS
     runs-on: ubuntu-22.04
     steps:
       - name: Install tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq wget binutils file zstd
+          sudo apt-get install -y debootstrap xz-utils binutils
 
-      - name: Download PRoot ARM64
+      - name: Bootstrap minimal Debian amd64
         run: |
-          wget -q "https://packages.termux.dev/apt/termux-main/dists/stable/main/binary-aarch64/Packages" -O Packages
+          sudo debootstrap \
+            --arch=amd64 \
+            --variant=minbase \
+            --include=libstdc++6,libc6,zlib1g \
+            --exclude=e2fsprogs,login,sysvinit-utils,util-linux,mount,bsdutils \
+            bookworm \
+            ./rootfs \
+            http://deb.debian.org/debian
 
-          PROOT_PKG=$(grep -A5 "^Package: proot$" Packages | grep "Filename:" | head -1 | awk '{print $2}')
-          echo "Package path: $PROOT_PKG"
+      - name: Pangkas AGRESIF
+        run: |
+          # Hapus semua doc, man, locale
+          sudo rm -rf ./rootfs/usr/share/doc
+          sudo rm -rf ./rootfs/usr/share/man
+          sudo rm -rf ./rootfs/usr/share/info
+          sudo rm -rf ./rootfs/usr/share/locale
+          sudo rm -rf ./rootfs/usr/share/i18n
+          sudo rm -rf ./rootfs/usr/share/common-licenses
+          sudo rm -rf ./rootfs/usr/share/bug
+          sudo rm -rf ./rootfs/usr/share/lintian
+          sudo rm -rf ./rootfs/usr/share/zoneinfo
+          sudo rm -rf ./rootfs/usr/share/bash-completion
+          sudo rm -rf ./rootfs/usr/share/readline
+          sudo rm -rf ./rootfs/usr/share/tabset
 
-          wget -q "https://packages.termux.dev/$PROOT_PKG" -O proot.deb
-          ls -lh proot.deb
+          # Hapus headers & dev files
+          sudo rm -rf ./rootfs/usr/include
 
-          ar x proot.deb
-          ls -la
+          # Hapus semua binary tidak perlu
+          sudo rm -rf ./rootfs/usr/bin/perl*
+          sudo rm -rf ./rootfs/usr/bin/python*
+          sudo rm -rf ./rootfs/usr/bin/dpkg*
+          sudo rm -rf ./rootfs/usr/bin/apt*
+          sudo rm -rf ./rootfs/usr/lib/python*
+          sudo rm -rf ./rootfs/usr/lib/perl*
+          sudo rm -rf ./rootfs/usr/lib/dpkg
+          sudo rm -rf ./rootfs/usr/lib/apt
 
-          if [ -f data.tar.xz ]; then
-            tar -xJf data.tar.xz
-          elif [ -f data.tar.gz ]; then
-            tar -xzf data.tar.gz
-          elif [ -f data.tar.zst ]; then
-            tar -I zstd -xf data.tar.zst
-          fi
+          # Hapus semua static libs
+          sudo find ./rootfs -name "*.a" -delete
+          sudo find ./rootfs -name "*.la" -delete
 
-          find . -path "*/bin/proot" -type f | head -1 | xargs -I{} cp {} ./proot
+          # Hapus semua binary di /bin /sbin kecuali sh
+          sudo find ./rootfs/bin -type f ! -name "sh" ! -name "bash" -delete 2>/dev/null || true
+          sudo find ./rootfs/sbin -type f -delete 2>/dev/null || true
+          sudo find ./rootfs/usr/sbin -type f -delete 2>/dev/null || true
 
-          echo "=== Verifikasi ==="
-          file ./proot
-          ls -lh ./proot
+          # Hapus semua binary di /usr/bin kecuali yang dibutuhkan
+          sudo find ./rootfs/usr/bin -type f \
+            ! -name "env" \
+            -delete 2>/dev/null || true
 
-      - name: Upload PRoot
+          # Hapus dpkg database (gak perlu install package lagi)
+          sudo rm -rf ./rootfs/var/lib/dpkg
+          sudo rm -rf ./rootfs/var/lib/apt
+          sudo rm -rf ./rootfs/var/cache
+          sudo rm -rf ./rootfs/var/log/*
+          sudo rm -rf ./rootfs/var/tmp/*
+
+          # Hapus tmp, proc, sys, dev lama
+          sudo rm -rf ./rootfs/tmp/*
+          sudo rm -rf ./rootfs/proc
+          sudo rm -rf ./rootfs/sys
+          sudo rm -rf ./rootfs/dev
+          sudo rm -rf ./rootfs/run
+          sudo rm -rf ./rootfs/media
+          sudo rm -rf ./rootfs/mnt
+          sudo rm -rf ./rootfs/opt
+          sudo rm -rf ./rootfs/srv
+          sudo rm -rf ./rootfs/home
+
+          # Buat dir minimal wajib
+          sudo mkdir -p ./rootfs/proc
+          sudo mkdir -p ./rootfs/sys
+          sudo mkdir -p ./rootfs/dev
+          sudo mkdir -p ./rootfs/tmp
+          sudo mkdir -p ./rootfs/gamemode
+          sudo chmod 1777 ./rootfs/tmp
+
+          # Strip SEMUA binary & shared libs
+          sudo find ./rootfs -type f \( -name "*.so" -o -name "*.so.*" \) \
+            -exec strip --strip-unneeded {} + 2>/dev/null || true
+          sudo find ./rootfs/lib* ./rootfs/usr/lib* -type f -executable \
+            -exec strip --strip-unneeded {} + 2>/dev/null || true
+
+          echo "=== Ukuran setelah pangkas ==="
+          sudo du -sh ./rootfs
+          echo "=== Isi lib ==="
+          sudo find ./rootfs -name "*.so*" | sort
+
+      - name: Pack RootFS
+        run: |
+          sudo tar \
+            --numeric-owner \
+            -cJf rootfs-minimal.tar.xz \
+            -C ./rootfs \
+            --exclude="./proc/*" \
+            --exclude="./sys/*" \
+            --exclude="./dev/*" \
+            --exclude="./tmp/*" \
+            .
+
+          echo "=== Ukuran akhir tar.xz ==="
+          ls -lh rootfs-minimal.tar.xz
+
+      - name: Upload RootFS
         uses: actions/upload-artifact@v4
         with:
-          name: proot-arm64
-          path: proot
+          name: rootfs-minimal
+          path: rootfs-minimal.tar.xz
