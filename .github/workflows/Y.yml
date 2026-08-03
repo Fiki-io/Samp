@@ -1,0 +1,37 @@
+name: Download MediaFire to GitHub Artifact
+
+on:
+  workflow_dispatch: # Memicu workflow secara manual melalui tab Actions
+
+jobs:
+  transfer-file:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Unduh File dari MediaFire
+        run: |
+          # URL MediaFire dari Anda
+          URL="https://mediafire.com"
+          
+          echo "Mencari direct link..."
+          # Ekstraksi otomatis tautan unduh asli dari kode HTML MediaFire
+          DIRECT_LINK=$(curl -sL "$URL" | grep -oE 'https://download[0-9]+://[^"]+')
+          
+          if [ -z "$DIRECT_LINK" ]; then
+            echo "Gagal mendapatkan direct link. Tautan mungkin kedaluwarsa atau diblokir captcha."
+            exit 1
+          fi
+          
+          echo "Direct link berhasil ditemukan!"
+          echo "Memulai pengunduhan file..."
+          
+          # Mengunduh file dan menyimpannya dengan nama gta_samp_nexotis.rar
+          curl -L "$DIRECT_LINK" -o "gta_samp_nexotis.rar"
+          echo "Unduhan selesai!"
+
+      - name: Unggah ke GitHub Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gta-samp-nexotis-archive # Nama folder artifact di GitHub
+          path: gta_samp_nexotis.rar     # Path file yang diunduh tadi
+          retention-days: 5              # File otomatis dihapus setelah 5 hari (opsional)
