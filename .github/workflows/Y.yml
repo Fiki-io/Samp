@@ -1,4 +1,4 @@
-name: Download MediaFire to GitHub Artifact
+name: Download Direct MediaFire to GitHub Artifact
 
 on:
   workflow_dispatch: # Memicu workflow secara manual melalui tab Actions
@@ -8,30 +8,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Unduh File dari MediaFire
+      - name: Unduh File via Direct Link
         run: |
-          # URL MediaFire dari Anda
-          URL="https://mediafire.com"
+          # Menyimpan direct link ke dalam variabel
+          DIRECT_LINK="https://www.mediafire.com/file/28k7r6dh2073okk/CARA+MAIN+GTA+SAMP+NEXOTIS.rar/file?dkey=l8lojbhwvhd&r=831"
           
-          echo "Mencari direct link..."
-          # Ekstraksi otomatis tautan unduh asli dari kode HTML MediaFire
-          DIRECT_LINK=$(curl -sL "$URL" | grep -oE 'https://download[0-9]+://[^"]+')
+          echo "Memulai pengunduhan langsung..."
           
-          if [ -z "$DIRECT_LINK" ]; then
-            echo "Gagal mendapatkan direct link. Tautan mungkin kedaluwarsa atau diblokir captcha."
-            exit 1
-          fi
+          # Mengunduh langsung menggunakan curl dengan header User-Agent agar aman
+          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "$DIRECT_LINK" -o "gta_samp_nexotis.rar"
           
-          echo "Direct link berhasil ditemukan!"
-          echo "Memulai pengunduhan file..."
-          
-          # Mengunduh file dan menyimpannya dengan nama gta_samp_nexotis.rar
-          curl -L "$DIRECT_LINK" -o "gta_samp_nexotis.rar"
           echo "Unduhan selesai!"
+          echo "Memeriksa ukuran file yang terunduh:"
+          ls -lh "gta_samp_nexotis.rar"
 
       - name: Unggah ke GitHub Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gta-samp-nexotis-archive # Nama folder artifact di GitHub
-          path: gta_samp_nexotis.rar     # Path file yang diunduh tadi
-          retention-days: 5              # File otomatis dihapus setelah 5 hari (opsional)
+          name: gta-samp-nexotis-archive
+          path: gta_samp_nexotis.rar
+          retention-days: 5
