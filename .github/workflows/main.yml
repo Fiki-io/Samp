@@ -18,9 +18,10 @@ jobs:
             g++-aarch64-linux-gnu \
             make \
             git \
-            pkg-config \
+            talloc-dev \
             libarchive-dev \
-            libglib2.0-dev
+            libglib2.0-dev \
+            pkg-config
 
       - name: Clone PRoot
         run: git clone --depth=1 https://github.com/proot-me/proot.git
@@ -28,12 +29,16 @@ jobs:
       - name: Build PRoot static ARM64
         run: |
           cd proot/src
+          make clean 2>/dev/null || true
           make \
             CC=aarch64-linux-gnu-gcc \
-            CFLAGS="-static -O2" \
+            CFLAGS="-static -O2 -Wno-deprecated" \
             LDFLAGS="-static" \
-            loader.elf loader-m32.elf proot
+            proot
           aarch64-linux-gnu-strip proot
+          echo "=== proot built ==="
+          file proot
+          ls -lh proot
 
       - name: Upload PRoot
         uses: actions/upload-artifact@v4
@@ -42,7 +47,7 @@ jobs:
           path: proot/src/proot
 
   build-box64:
-    name: Build Box64 Static (ARM64)
+    name: Build Box64 (ARM64)
     runs-on: ubuntu-22.04
     steps:
       - name: Install dependencies
@@ -52,7 +57,8 @@ jobs:
             cmake \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
-            git
+            git \
+            make
 
       - name: Clone Box64
         run: git clone --depth=1 https://github.com/ptitSeb/box64.git
@@ -67,9 +73,13 @@ jobs:
             -DARM_DYNAREC=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_SYSTEM_NAME=Linux \
-            -DCMAKE_SYSTEM_PROCESSOR=aarch64
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DSTATICBUILD=ON
           make -j$(nproc)
           aarch64-linux-gnu-strip box64
+          echo "=== box64 built ==="
+          file box64
+          ls -lh box64
 
       - name: Upload Box64
         uses: actions/upload-artifact@v4
@@ -78,19 +88,18 @@ jobs:
           path: box64/build/box64
 
   build-rootfs:
-    name: Build Minimal Debian RootFS
+    name: Build Minimal Debian RootFS (tanpa pawncc)
     runs-on: ubuntu-22.04
     steps:
-      - name: Install debootstrap & tools
+      - name: Install tools
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             debootstrap \
-            qemu-user-static \
             xz-utils \
             binutils
 
-      - name: Bootstrap minimal Debian x86_64
+      - name: Bootstrap minimal Debian amd64
         run: |
           sudo debootstrap \
             --arch=amd64 \
@@ -100,54 +109,42 @@ jobs:
             ./rootfs \
             http://deb.debian.org/debian
 
-      - name: Download pawncc from Open.MP
+      - name: Pangkas RootFS
         run: |
-          wget -q https://github.com/openmultiplayer/open.mp/releases/latest/download/open.mp-linux-x86_64.tar.gz
-          tar -xzf open.mp-linux-x86_64.tar.gz
-          # Extract hanya pawncc binary
-          find . -name "pawncc" -type f | head -1 | xargs -I{} cp {} ./rootfs/usr/local/bin/pawncc
-          chmod +x ./rootfs/usr/local/bin/pawncc
-
-      - name: Strip & Pangkas RootFS
-        run: |
-          sudo chroot ./rootfs /bin/sh -c "
-            # Hapus apt cache
-            apt-get clean
-            rm -rf /var/cache/apt/*
-            rm -rf /var/lib/apt/lists/*
-
-            # Hapus docs
-            rm -rf /usr/share/doc
-            rm -rf /usr/share/man
-            rm -rf /usr/share/info
-            rm -rf /usr/share/locale
-            rm -rf /usr/share/i18n
-
-            # Hapus dev files tidak perlu
-            rm -rf /usr/include
-
-            # Hapus binary tidak perlu
-            rm -rf /bin/mount /bin/umount
-            rm -rf /sbin/fdisk /sbin/mkfs* /sbin/fsck*
-            rm -rf /usr/bin/perl /usr/bin/python*
-            rm -rf /usr/lib/python*
-
-            # Strip semua binary & libs
-            find /usr/bin /usr/local/bin /lib /usr/lib -type f \
-              \( -name '*.so*' -o -perm /111 \) \
-              ! -name '*.py' \
-              -exec strip --strip-unneeded {} + 2>/dev/null || true
-          "
-
-          # Hapus dari luar
+          # Hapus dari luar chroot (lebih aman di GHA)
+          sudo rm -rf ./rootfs/var/cache/apt
+          sudo rm -rf ./rootfs/var/lib/apt/lists
+          sudo rm -rf ./rootfs/usr/share/doc
+          sudo rm -rf ./rootfs/usr/share/man
+          sudo rm -rf ./rootfs/usr/share/info
+          sudo rm -rf ./rootfs/usr/share/locale
+          sudo rm -rf ./rootfs/usr/share/i18n
+          sudo rm -rf ./rootfs/usr/include
+          sudo rm -rf ./rootfs/usr/lib/python*
+          sudo rm -rf ./rootfs/usr/bin/perl
+          sudo rm -rf ./rootfs/usr/bin/python*
           sudo rm -rf ./rootfs/tmp/*
           sudo rm -rf ./rootfs/var/log/*
           sudo rm -rf ./rootfs/var/tmp/*
-          sudo rm -rf ./rootfs/proc
-          sudo rm -rf ./rootfs/sys
-          sudo rm -rf ./rootfs/dev
-          sudo rm -rf ./rootfs/run
+
+          # Hapus binary system yang tidak diperlukan
+          sudo rm -f ./rootfs/sbin/fdisk
+          sudo rm -f ./rootfs/sbin/mkfs*
+          sudo rm -f ./rootfs/sbin/fsck*
+          sudo rm -f ./rootfs/bin/mount
+          sudo rm -f ./rootfs/bin/umount
+
+          # Buat dir wajib kosong
+          sudo rm -rf ./rootfs/proc ./rootfs/sys ./rootfs/dev ./rootfs/run
           sudo mkdir -p ./rootfs/proc ./rootfs/sys ./rootfs/dev ./rootfs/tmp
+          sudo chmod 1777 ./rootfs/tmp
+
+          # Strip semua libs & binaries
+          sudo find ./rootfs/usr/lib ./rootfs/lib -type f -name "*.so*" \
+            -exec aarch64-linux-gnu-strip --strip-unneeded {} + 2>/dev/null || true
+
+          echo "=== Ukuran sebelum pack ==="
+          sudo du -sh ./rootfs
 
       - name: Pack RootFS
         run: |
@@ -155,10 +152,8 @@ jobs:
             --numeric-owner \
             -cJf rootfs-minimal.tar.xz \
             -C ./rootfs .
-          
-          # Tampilkan ukuran akhir
-          echo "=== Ukuran RootFS ==="
-          du -sh ./rootfs
+
+          echo "=== Ukuran tar.xz ==="
           ls -lh rootfs-minimal.tar.xz
 
       - name: Upload RootFS
@@ -168,7 +163,7 @@ jobs:
           path: rootfs-minimal.tar.xz
 
   package-assets:
-    name: Package All Assets
+    name: Package Final Assets
     runs-on: ubuntu-22.04
     needs: [build-proot, build-box64, build-rootfs]
     steps:
@@ -177,12 +172,14 @@ jobs:
         with:
           path: artifacts/
 
-      - name: Susun struktur assets
+      - name: Susun assets
         run: |
           mkdir -p assets
-          cp artifacts/proot-arm64/proot      assets/proot
-          cp artifacts/box64/box64             assets/box64
-          cp artifacts/rootfs-minimal/rootfs-minimal.tar.xz assets/rootfs.tar.xz
+          cp artifacts/proot-arm64/proot                        assets/proot
+          cp artifacts/box64/box64                               assets/box64
+          cp artifacts/rootfs-minimal/rootfs-minimal.tar.xz     assets/rootfs.tar.xz
+
+          chmod +x assets/proot assets/box64
 
           echo "=== Assets Final ==="
           ls -lh assets/
