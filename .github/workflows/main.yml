@@ -18,7 +18,7 @@ jobs:
             g++-aarch64-linux-gnu \
             make \
             git \
-            talloc-dev \
+            libtalloc-dev \
             libarchive-dev \
             libglib2.0-dev \
             pkg-config
@@ -88,7 +88,7 @@ jobs:
           path: box64/build/box64
 
   build-rootfs:
-    name: Build Minimal Debian RootFS (tanpa pawncc)
+    name: Build Minimal Debian RootFS
     runs-on: ubuntu-22.04
     steps:
       - name: Install tools
@@ -111,7 +111,6 @@ jobs:
 
       - name: Pangkas RootFS
         run: |
-          # Hapus dari luar chroot (lebih aman di GHA)
           sudo rm -rf ./rootfs/var/cache/apt
           sudo rm -rf ./rootfs/var/lib/apt/lists
           sudo rm -rf ./rootfs/usr/share/doc
@@ -126,22 +125,17 @@ jobs:
           sudo rm -rf ./rootfs/tmp/*
           sudo rm -rf ./rootfs/var/log/*
           sudo rm -rf ./rootfs/var/tmp/*
-
-          # Hapus binary system yang tidak diperlukan
           sudo rm -f ./rootfs/sbin/fdisk
           sudo rm -f ./rootfs/sbin/mkfs*
           sudo rm -f ./rootfs/sbin/fsck*
           sudo rm -f ./rootfs/bin/mount
           sudo rm -f ./rootfs/bin/umount
-
-          # Buat dir wajib kosong
           sudo rm -rf ./rootfs/proc ./rootfs/sys ./rootfs/dev ./rootfs/run
           sudo mkdir -p ./rootfs/proc ./rootfs/sys ./rootfs/dev ./rootfs/tmp
           sudo chmod 1777 ./rootfs/tmp
 
-          # Strip semua libs & binaries
           sudo find ./rootfs/usr/lib ./rootfs/lib -type f -name "*.so*" \
-            -exec aarch64-linux-gnu-strip --strip-unneeded {} + 2>/dev/null || true
+            -exec strip --strip-unneeded {} + 2>/dev/null || true
 
           echo "=== Ukuran sebelum pack ==="
           sudo du -sh ./rootfs
@@ -175,9 +169,9 @@ jobs:
       - name: Susun assets
         run: |
           mkdir -p assets
-          cp artifacts/proot-arm64/proot                        assets/proot
-          cp artifacts/box64/box64                               assets/box64
-          cp artifacts/rootfs-minimal/rootfs-minimal.tar.xz     assets/rootfs.tar.xz
+          cp artifacts/proot-arm64/proot                      assets/proot
+          cp artifacts/box64/box64                             assets/box64
+          cp artifacts/rootfs-minimal/rootfs-minimal.tar.xz   assets/rootfs.tar.xz
 
           chmod +x assets/proot assets/box64
 
