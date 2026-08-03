@@ -1,4 +1,4 @@
-name: Build Minimal RootFS for PAWN Compiler
+name: Build PRoot Static ARM64
 
 on:
   push:
@@ -7,36 +7,43 @@ on:
 
 jobs:
   build-proot:
-    name: Build PRoot Static (ARM64)
+    name: Build PRoot dari Source (ARM64)
     runs-on: ubuntu-22.04
     steps:
       - name: Install dependencies
         run: |
-          sudo apt-get update
+          sudo dpkg --add-architecture arm64
+          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe" \
+            | sudo tee -a /etc/apt/sources.list
+          sudo apt-get update -qq
           sudo apt-get install -y \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
             make \
             git \
-            libtalloc-dev \
-            libarchive-dev \
-            libglib2.0-dev \
-            pkg-config
+            pkg-config \
+            libtalloc-dev:arm64 \
+            libtalloc-dev
 
       - name: Clone PRoot
         run: git clone --depth=1 https://github.com/proot-me/proot.git
 
-      - name: Build PRoot static ARM64
+      - name: Build PRoot ARM64
         run: |
           cd proot/src
-          make clean 2>/dev/null || true
-          make \
-            CC=aarch64-linux-gnu-gcc \
-            CFLAGS="-static -O2 -Wno-deprecated" \
+
+          # Build loader.elf dengan host gcc (bukan cross compiler)
+          # karena loader.elf adalah helper kecil yang di-embed
+          make CC=aarch64-linux-gnu-gcc \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CFLAGS="-O2 -Wno-deprecated -Wno-unused-result" \
             LDFLAGS="-static" \
+            HAS_LOADER_32BIT=0 \
+            LOADER_BUILD_ENV="aarch64-linux-gnu-" \
             proot
+
           aarch64-linux-gnu-strip proot
-          echo "=== proot built ==="
           file proot
           ls -lh proot
 
@@ -45,142 +52,3 @@ jobs:
         with:
           name: proot-arm64
           path: proot/src/proot
-
-  build-box64:
-    name: Build Box64 (ARM64)
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            cmake \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu \
-            git \
-            make
-
-      - name: Clone Box64
-        run: git clone --depth=1 https://github.com/ptitSeb/box64.git
-
-      - name: Build Box64 for ARM64
-        run: |
-          cd box64
-          mkdir build && cd build
-          cmake .. \
-            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
-            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-            -DARM_DYNAREC=ON \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_SYSTEM_NAME=Linux \
-            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
-            -DSTATICBUILD=ON
-          make -j$(nproc)
-          aarch64-linux-gnu-strip box64
-          echo "=== box64 built ==="
-          file box64
-          ls -lh box64
-
-      - name: Upload Box64
-        uses: actions/upload-artifact@v4
-        with:
-          name: box64
-          path: box64/build/box64
-
-  build-rootfs:
-    name: Build Minimal Debian RootFS
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Install tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            debootstrap \
-            xz-utils \
-            binutils
-
-      - name: Bootstrap minimal Debian amd64
-        run: |
-          sudo debootstrap \
-            --arch=amd64 \
-            --variant=minbase \
-            --include=libstdc++6,libc6,zlib1g \
-            bookworm \
-            ./rootfs \
-            http://deb.debian.org/debian
-
-      - name: Pangkas RootFS
-        run: |
-          sudo rm -rf ./rootfs/var/cache/apt
-          sudo rm -rf ./rootfs/var/lib/apt/lists
-          sudo rm -rf ./rootfs/usr/share/doc
-          sudo rm -rf ./rootfs/usr/share/man
-          sudo rm -rf ./rootfs/usr/share/info
-          sudo rm -rf ./rootfs/usr/share/locale
-          sudo rm -rf ./rootfs/usr/share/i18n
-          sudo rm -rf ./rootfs/usr/include
-          sudo rm -rf ./rootfs/usr/lib/python*
-          sudo rm -rf ./rootfs/usr/bin/perl
-          sudo rm -rf ./rootfs/usr/bin/python*
-          sudo rm -rf ./rootfs/tmp/*
-          sudo rm -rf ./rootfs/var/log/*
-          sudo rm -rf ./rootfs/var/tmp/*
-          sudo rm -f ./rootfs/sbin/fdisk
-          sudo rm -f ./rootfs/sbin/mkfs*
-          sudo rm -f ./rootfs/sbin/fsck*
-          sudo rm -f ./rootfs/bin/mount
-          sudo rm -f ./rootfs/bin/umount
-          sudo rm -rf ./rootfs/proc ./rootfs/sys ./rootfs/dev ./rootfs/run
-          sudo mkdir -p ./rootfs/proc ./rootfs/sys ./rootfs/dev ./rootfs/tmp
-          sudo chmod 1777 ./rootfs/tmp
-
-          sudo find ./rootfs/usr/lib ./rootfs/lib -type f -name "*.so*" \
-            -exec strip --strip-unneeded {} + 2>/dev/null || true
-
-          echo "=== Ukuran sebelum pack ==="
-          sudo du -sh ./rootfs
-
-      - name: Pack RootFS
-        run: |
-          sudo tar \
-            --numeric-owner \
-            -cJf rootfs-minimal.tar.xz \
-            -C ./rootfs .
-
-          echo "=== Ukuran tar.xz ==="
-          ls -lh rootfs-minimal.tar.xz
-
-      - name: Upload RootFS
-        uses: actions/upload-artifact@v4
-        with:
-          name: rootfs-minimal
-          path: rootfs-minimal.tar.xz
-
-  package-assets:
-    name: Package Final Assets
-    runs-on: ubuntu-22.04
-    needs: [build-proot, build-box64, build-rootfs]
-    steps:
-      - name: Download semua artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts/
-
-      - name: Susun assets
-        run: |
-          mkdir -p assets
-          cp artifacts/proot-arm64/proot                      assets/proot
-          cp artifacts/box64/box64                             assets/box64
-          cp artifacts/rootfs-minimal/rootfs-minimal.tar.xz   assets/rootfs.tar.xz
-
-          chmod +x assets/proot assets/box64
-
-          echo "=== Assets Final ==="
-          ls -lh assets/
-
-      - name: Upload Final Assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-assets
-          path: assets/
-          retention-days: 30
