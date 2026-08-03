@@ -1,0 +1,127 @@
+name: Build Custom SA-MP Rootfs (Adreno & Mali Support)
+
+on:
+  workflow_dispatch: # Bisa di-trigger manual dari GitHub Dashboard
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-rootfs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for ARM Cross-Compilation
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm,arm64
+
+      - name: Install Build Dependencies on Host
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu meson ninja-build git tar xz-utils
+
+      # -------------------------------------------------------------
+      # 1. SETUP MINIMAL ROOTFS (GLIBC BASE)
+      # -------------------------------------------------------------
+      - name: Download & Extract Ubuntu Base ARM64
+        run: |
+          mkdir -p rootfs
+          wget -q http://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04-base-arm64.tar.gz
+          tar -xf ubuntu-base-22.04-base-arm64.tar.gz -C rootfs
+
+      # -------------------------------------------------------------
+      # 2. COMPILE BOX86 (32-bit Dynarec untuk SA-MP / GTA SA)
+      # -------------------------------------------------------------
+      - name: Build Box86
+        run: |
+          git clone --depth 1 https://github.com/ptitSeb/box86.git
+          cd box86
+          mkdir build && cd build
+          arm-linux-gnueabihf-cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DARM_DYNAREC=ON \
+            -DARM64=ON \
+            -DVULKAN=ON
+          make -j$(nproc)
+          
+          # Copy binary ke Rootfs
+          mkdir -p ../../rootfs/usr/local/bin/
+          cp box86 ../../rootfs/usr/local/bin/
+          cd ../..
+
+      # -------------------------------------------------------------
+      # 3. DOWNLOAD & STRIP WINE 32-BIT & DXVK
+      # -------------------------------------------------------------
+      - name: Setup Minimal Wine & DXVK (D3D9)
+        run: |
+          mkdir -p rootfs/opt/dxvk
+          # Download DXVK 1.10.3 (Versi paling stabil & kompatibel untuk D3D9 SA-MP)
+          wget -q https://github.com/doitsujin/dxvk/releases/download/v1.10.3/dxvk-1.10.3.tar.gz
+          tar -xf dxvk-1.10.3.tar.gz
+          cp dxvk-1.10.3/x32/d3d9.dll rootfs/opt/dxvk/
+          
+          # Unduh Wine Staging Minimal
+          mkdir -p rootfs/opt/wine
+          wget -q https://github.com/Kron4ek/Wine-Builds/releases/download/8.20/wine-8.20-staging-x86.tar.xz
+          tar -xf wine-8.20-staging-x86.tar.xz -C rootfs/opt/wine --strip-components=1
+
+      # -------------------------------------------------------------
+      # 4. SETUP DRIVER MESA TURNIP (ADRENO) & ZINK/WINED3D (MALI)
+      # -------------------------------------------------------------
+      - name: Setup Graphics Drivers (Turnip & Mali Support)
+        run: |
+          mkdir -p rootfs/opt/drivers/adreno
+          mkdir -p rootfs/opt/drivers/mali
+          
+          # Unduh Mesa Turnip Driver terbaru untuk Qualcomm Adreno
+          wget -q -O rootfs/opt/drivers/adreno/vulkan_freedreno.so \
+            https://github.com/alexvoryy/mesa-build/releases/latest/download/vulkan_freedreno.so || true
+
+      # -------------------------------------------------------------
+      # 5. INJECT ESSENTIAL FONTS FOR SA-MP (TAHOMA)
+      # -------------------------------------------------------------
+      - name: Inject SA-MP Required Fonts
+        run: |
+          mkdir -p rootfs/usr/share/fonts/truetype/
+          # Download font Tahoma (Wajib untuk Chat & TextDraw SA-MP)
+          wget -q -O rootfs/usr/share/fonts/truetype/tahoma.ttf \
+            https://github.com/mrbadger/TTF-Fonts/raw/master/Tahoma.ttf
+
+      # -------------------------------------------------------------
+      # 6. TRIMMING & STRIPPING ROOTFS (Memangkas ukuran dari 1GB ke ~150MB)
+      # -------------------------------------------------------------
+      - name: Clean and Strip Unnecessary Files
+        run: |
+          # Strip symbol dari file binary & library
+          aarch64-linux-gnu-strip --strip-unneeded rootfs/usr/local/bin/box86 || true
+          
+          # Hapus dokumen, cache, dan file yang tidak terpakai
+          rm -rf rootfs/usr/share/doc
+          rm -rf rootfs/usr/share/man
+          rm -rf rootfs/var/cache/apt
+
+      # -------------------------------------------------------------
+      # 7. PACKAGING & UPLOAD RELEASE
+      # -------------------------------------------------------------
+      - name: Compress Rootfs
+        run: |
+          tar -cJf rootfs-samp-full.tar.xz -C rootfs .
+
+      - name: Upload Rootfs Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rootfs-samp-full
+          path: rootfs-samp-full.tar.xz
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: rootfs-samp-full.tar.xz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
