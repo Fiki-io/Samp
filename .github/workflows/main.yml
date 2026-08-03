@@ -1,7 +1,7 @@
-name: Build Custom SA-MP Rootfs (Adreno & Mali Full Support)
+name: Build Custom SA-MP Rootfs (Ultra-Trimmed 35MB)
 
 on:
-  workflow_dispatch: # Dapat dijalankan manual dari tab "Actions" di GitHub
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -17,34 +17,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # -------------------------------------------------------------
-      # 1. INSTALL SEMUA BUILD DEPENDENCIES DENGAN LENGKAP
-      # -------------------------------------------------------------
+      # 1. INSTALL BUILD DEPENDENCIES
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            cmake \
-            gcc-arm-linux-gnueabihf \
-            g++-arm-linux-gnueabihf \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu \
-            binutils-arm-linux-gnueabihf \
-            binutils-aarch64-linux-gnu \
-            meson \
-            ninja-build \
-            git \
-            tar \
-            xz-utils \
-            wget \
-            curl \
-            python3 \
-            pkg-config \
-            unzip
+            cmake gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+            binutils-arm-linux-gnueabihf binutils-aarch64-linux-gnu \
+            meson ninja-build git tar xz-utils wget curl python3 pkg-config unzip
 
-      # -------------------------------------------------------------
-      # 2. SETUP MINIMAL ROOTFS (GLIBC UBUNTU BASE ARM64)
-      # -------------------------------------------------------------
+      # 2. SETUP MINIMAL ROOTFS
       - name: Setup Minimal Ubuntu Base ARM64
         run: |
           mkdir -p rootfs
@@ -52,16 +35,11 @@ jobs:
           tar -xf ubuntu-base.tar.gz -C rootfs
           rm ubuntu-base.tar.gz
 
-      # -------------------------------------------------------------
-      # 3. COMPILE BOX86 (32-bit Dynarec untuk SA-MP & GTA SA)
-      # -------------------------------------------------------------
-      - name: Build Box86 from Source
+      # 3. BUILD BOX86 FROM SOURCE
+      - name: Build Box86
         run: |
           git clone --depth 1 https://github.com/ptitSeb/box86.git
-          cd box86
-          mkdir build && cd build
-          
-          # Cross compile menggunakan GCC armhf
+          cd box86 && mkdir build && cd build
           cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_SYSTEM_NAME=Linux \
@@ -70,47 +48,34 @@ jobs:
             -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ \
             -DARM_DYNAREC=ON \
             -DVULKAN=ON
-            
           make -j$(nproc)
-          
           mkdir -p ../../rootfs/usr/local/bin/
           cp box86 ../../rootfs/usr/local/bin/
-          cd ../..
-          rm -rf box86
+          cd ../.. && rm -rf box86
 
-      # -------------------------------------------------------------
-      # 4. DOWNLOAD WINE 32-BIT & DXVK (D3D9)
-      # -------------------------------------------------------------
+      # 4. SETUP WINE 32-BIT & DXVK
       - name: Setup Wine 32-bit & DXVK
         run: |
           mkdir -p rootfs/opt/wine
           mkdir -p rootfs/opt/dxvk
 
-          # Ambil rilis Wine 32-bit terbaru secara dinamis dari Kron4ek
           WINE_URL=$(curl -s https://api.github.com/repos/Kron4ek/Wine-Builds/releases | grep "browser_download_url.*staging-x86.tar.xz" | cut -d '"' -f 4 | head -n 1)
           if [ -z "$WINE_URL" ]; then
             WINE_URL="https://github.com/Kron4ek/Wine-Builds/releases/download/9.16/wine-9.16-staging-x86.tar.xz"
           fi
-          echo "Downloading Wine from: $WINE_URL"
           wget -q "$WINE_URL" -O wine-x86.tar.xz
           tar -xf wine-x86.tar.xz -C rootfs/opt/wine --strip-components=1
           rm wine-x86.tar.xz
 
-          # Download DXVK 1.10.3 (Versi D3D9 paling stabil untuk SA-MP)
           wget -q https://github.com/doitsujin/dxvk/releases/download/v1.10.3/dxvk-1.10.3.tar.gz
           tar -xf dxvk-1.10.3.tar.gz
           cp dxvk-1.10.3/x32/d3d9.dll rootfs/opt/dxvk/
           rm -rf dxvk-1.10.3*
 
-      # -------------------------------------------------------------
-      # 5. SETUP DRIVER MESA TURNIP (ADRENO) & MALI SUPPORT
-      # -------------------------------------------------------------
-      - name: Download Turnip & Mali Drivers
+      # 5. SETUP DRIVER TURNIP
+      - name: Download Drivers
         run: |
           mkdir -p rootfs/opt/drivers/adreno
-          mkdir -p rootfs/opt/drivers/mali
-
-          # Ambil rilis Driver Turnip (Freedreno) terbaru
           TURNIP_URL=$(curl -s https://api.github.com/repos/The412Banner/Banners-Turnip/releases/latest | grep "browser_download_url.*zip" | cut -d '"' -f 4 | head -n 1)
           if [ -n "$TURNIP_URL" ]; then
             wget -q "$TURNIP_URL" -O turnip.zip
@@ -118,45 +83,56 @@ jobs:
             rm -f turnip.zip
           fi
 
-      # -------------------------------------------------------------
-      # 6. INJECT FONT WAJIB SA-MP (TAHOMA & ARIAL)
-      # -------------------------------------------------------------
-      - name: Install SA-MP Essential Fonts
+      # 6. INJECT FONTS WAJIB SA-MP
+      - name: Install Fonts
         run: |
           mkdir -p rootfs/usr/share/fonts/truetype/
           wget -q -O rootfs/usr/share/fonts/truetype/tahoma.ttf https://github.com/mrbadger/TTF-Fonts/raw/master/Tahoma.ttf || true
           wget -q -O rootfs/usr/share/fonts/truetype/arial.ttf https://github.com/mrbadger/TTF-Fonts/raw/master/Arial.ttf || true
 
       # -------------------------------------------------------------
-      # 7. TRIMMING & STRIPPING ROOTFS (Memangkas ukuran file)
+      # 7. ULTRA-TRIMMING STEP (PANGKAS FITUR SAMPAH KHUSUS SA-MP)
       # -------------------------------------------------------------
-      - name: Clean & Strip Rootfs
+      - name: Ultra-Trim Unnecessary Features
         run: |
-          # Strip simbol binary ARM menggunakan toolchain yang tepat
-          arm-linux-gnueabihf-strip --strip-unneeded rootfs/usr/local/bin/box86 || true
-          
-          # Bersihkan file dokumentasi dan cache untuk menghemat ruang
-          rm -rf rootfs/usr/share/doc
-          rm -rf rootfs/usr/share/man
-          rm -rf rootfs/var/cache/apt
+          # A. Hapus Wine Mono & Gecko (.NET & IE Engine) -> Penghemat Terbesar!
+          rm -rf rootfs/opt/wine/share/wine/gecko
+          rm -rf rootfs/opt/wine/share/wine/mono
 
-      # -------------------------------------------------------------
-      # 8. KOMPRESI & UPLOAD ARTIFACT HARIAN / RELEASE
-      # -------------------------------------------------------------
-      - name: Compress Rootfs Archive
+          # B. Hapus EXE Windows Bawaan Wine yang Tidak Dipakai Game
+          cd rootfs/opt/wine/bin/ || true
+          rm -f control notepad progman regedit regsvr32 msiexec winefile winemine taskmgr winedbg winedevice || true
+          cd -
+
+          # C. Hapus DLL DirectX 10, 11, 12, dan Driver Printer/Scanner
+          find rootfs/opt/wine/ -name "d3d10*.dll" -delete || true
+          find rootfs/opt/wine/ -name "d3d11*.dll" -delete || true
+          find rootfs/opt/wine/ -name "d3d12*.dll" -delete || true
+          find rootfs/opt/wine/ -name "dxgi.dll" -delete || true
+          find rootfs/opt/wine/ -name "winspool.drv" -delete || true
+          find rootfs/opt/wine/ -name "spoolss.dll" -delete || true
+          find rootfs/opt/wine/ -name "scarddlg.dll" -delete || true
+
+          # D. Hapus File Bahasa, Headers, Cache, & Docs
+          rm -rf rootfs/usr/share/locale/*
+          rm -rf rootfs/usr/share/i18n/*
+          rm -rf rootfs/usr/include/*
+          rm -rf rootfs/usr/share/doc/*
+          rm -rf rootfs/usr/share/man/*
+          rm -rf rootfs/var/cache/apt/*
+          rm -rf rootfs/var/lib/apt/lists/*
+
+          # E. Aggressive Stripping (Hapus Debug Symbols di Seluruh .so & .dll)
+          find rootfs/ -type f \( -name "*.so*" -o -name "*.dll" \) -exec arm-linux-gnueabihf-strip --strip-unneeded {} + 2>/dev/null || true
+          find rootfs/ -type f \( -name "*.so*" -o -name "*.dll" \) -exec aarch64-linux-gnu-strip --strip-unneeded {} + 2>/dev/null || true
+
+      # 8. KOMPRESI & UPLOAD
+      - name: Compress Rootfs
         run: |
           tar -cJf rootfs-samp-full.tar.xz -C rootfs .
 
-      - name: Upload Artifact to GitHub
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: rootfs-samp-full
           path: rootfs-samp-full.tar.xz
-
-      - name: Upload to GitHub Release (If Tag Pushed)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: rootfs-samp-full.tar.xz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
